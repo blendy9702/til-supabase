@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronUp } from "lucide-react";
 import LabelCalendar from "@/components/common/calendar/LabelCalendar";
+import MarkdownDialog from "@/components/common/dialog/MarkdownDialog";
 
 function BasicBoard() {
   return (
@@ -41,7 +42,9 @@ function BasicBoard() {
         </div>
       </div>
       {/* 하단 */}
-      <div className={styles.container_footer}></div>
+      <div className={styles.container_footer}>
+        <MarkdownDialog />
+      </div>
     </div>
   );
 }

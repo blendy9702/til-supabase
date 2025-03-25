@@ -33,7 +33,7 @@ function Page() {
             </div>
             <Button
               variant="outline"
-              className="w-[20%] text-white bg-orange-500 border-orange-500 hover:bg-orange-600"
+              className="w-[20%] text-white bg-orange-400 border-orange-500 hover:bg-orange-700 hover:text-white cursor-pointer"
             >
               Add New Board
             </Button>

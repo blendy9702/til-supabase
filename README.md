@@ -671,3 +671,223 @@ export default BasicBoard;
 ```bash
 npx shadcn@latest add dialog
 ```
+
+- https://ui.shadcn.com/docs/components/separator
+
+```bash
+npx shadcn@latest add separator
+```
+
+## 2.2. 실습
+
+- `/src/components/common/dialog 폴더 생성`
+- `/src/components/common/dialog/MarkdownDialog.tsx 파일 생성`
+- `/src/components/common/dialog/MarkdownDialog.module.scss 파일 생성`
+
+## 2.2.1. MarkdownDialog.tsx
+
+```tsx
+import styles from "@/components/common/dialog/MarkdownDialog.module.scss";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import LabelCalendar from "../calendar/LabelCalendar";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+
+function MarkdownDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <span className="font-normal text-gray-400 hover:text-gray-500 cursor-pointer">
+          Add Content
+        </span>
+      </DialogTrigger>
+      <DialogContent className="max-w-fit min-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>
+            <div className={styles.dialog_titleBox}>
+              <Checkbox className="w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Write a title for your board"
+                className={styles.dialog_titleBox_title}
+              />
+            </div>
+          </DialogTitle>
+          <div className={styles.dialog_calendarBox}>
+            <LabelCalendar label="From" required={false} />
+            <LabelCalendar label="To" required={false} />
+          </div>
+          <Separator />
+          {/* 마크다운 입력 영역 */}
+          <div className={styles.dialog_markdown}>여기에 에디터 배치</div>
+        </DialogHeader>
+        <DialogFooter>
+          <div className={styles.dialog_buttonBox}>
+            <Button
+              variant={"ghost"}
+              className="font-normal text-gray-400 hover:bg-gray-50 hover:text-gray-500"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="font-normal border-orange-500 bg-orange-400 text-white hover:bg-orange-500 hover:text-white"
+            >
+              Save
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default MarkdownDialog;
+```
+
+## 2.2.2. MarkdownDialog.module.scss
+
+```scss
+.dialog {
+  &_titleBox {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 8px;
+
+    &_title {
+      width: 100%;
+      outline: none;
+      border: none;
+
+      font-weight: 500;
+      font-size: 24px;
+      color: #303030;
+      &::placeholder {
+        font-weight: 500;
+        color: #bdbdbd;
+      }
+    }
+  }
+  &_calendarBox {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 16px;
+    padding-top: 16px;
+  }
+  &_markdown {
+    width: 100%;
+    height: 50vh;
+    padding-top: 16px;
+  }
+  &_buttonBox {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+    gap: 16px;
+    padding-top: 16px;
+  }
+}
+```
+
+# MarkDown Editor
+
+- https://www.npmjs.com/package/@uiw/react-md-editor
+
+```bash
+npm install @uiw/react-md-editor --legacy-peer-deps
+```
+
+## 실습 1.
+
+- MarkdownDialog.tsx
+
+```tsx
+"use client";
+// SCSS
+import styles from "@/components/common/dialog/MarkdownDialog.module.scss";
+import { Checkbox } from "@/components/ui/checkbox";
+// Markdown
+import MDEditor from "@uiw/react-md-editor";
+
+// shadcn/ui
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import LabelCalendar from "../calendar/LabelCalendar";
+import { useState } from "react";
+
+function MarkdownDialog() {
+  // 에디터의 본문 내용
+  const [content, setContent] = useState<string | undefined>("");
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <span className="flex justify-center w-full font-normal text-gray-400 hover:text-gray-500 cursor-pointer">
+          Add Content
+        </span>
+      </DialogTrigger>
+      <DialogContent className="max-w-fit min-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>
+            <div className={styles.dialog_titleBox}>
+              <Checkbox className="w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Write a title for your board"
+                className={styles.dialog_titleBox_title}
+              />
+            </div>
+          </DialogTitle>
+          <div className={styles.dialog_calendarBox}>
+            <LabelCalendar label="From" required={false} />
+            <LabelCalendar label="To" required={false} />
+          </div>
+          <Separator />
+          {/* 마크다운 입력 영역 */}
+          <div className={styles.dialog_markdown}>
+            <MDEditor height={"80%"} value={content} onChange={setContent} />
+          </div>
+        </DialogHeader>
+        <DialogFooter>
+          <div className={styles.dialog_buttonBox}>
+            <Button
+              variant={"ghost"}
+              className="font-normal text-gray-400 hover:bg-gray-50 hover:text-gray-500"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="font-normal border-orange-500 bg-orange-400 text-white hover:bg-orange-500 hover:text-white"
+            >
+              Save
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default MarkdownDialog;
+```
