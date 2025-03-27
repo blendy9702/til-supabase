@@ -19,9 +19,10 @@ interface BoardContent {
 interface BasicBoardProps {
   item: BoardContent;
   updateContent: (newData: BoardContent) => void;
+  deleteContent: (boardId: string) => void;
 }
 
-function BasicBoard({ item, updateContent }: BasicBoardProps) {
+function BasicBoard({ item, updateContent, deleteContent }: BasicBoardProps) {
   return (
     <div className={styles.container}>
       {/* 헤더 */}
@@ -68,6 +69,7 @@ function BasicBoard({ item, updateContent }: BasicBoardProps) {
           <Button
             variant={"ghost"}
             className="font-normal text-gray-400 hover:bg-red-500 hover:text-white"
+            onClick={() => deleteContent(item.boardId)}
           >
             Delete
           </Button>

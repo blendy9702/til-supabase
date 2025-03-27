@@ -5,7 +5,12 @@ import { nanoid } from "nanoid";
 // scss
 import styles from "@/app/create/[id]/page.module.scss";
 // action
-import { getTodoId, updateTodoId } from "@/app/actions/todos-action";
+import {
+  getTodoId,
+  updateTodoId,
+  updateTodoIdTitle,
+  deleteTodoId,
+} from "@/app/actions/todos-action";
 // component
 import BasicBoard from "@/components/common/board/BasicBoard";
 // shadcn/ui
@@ -15,6 +20,8 @@ import { Progress } from "@/components/ui/progress";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Image from "next/image";
+import { ChevronLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // contents 배열에 대한 타입 정의
 interface BoardContent {
@@ -27,12 +34,45 @@ interface BoardContent {
 }
 
 function Page() {
+  const router = useRouter();
   const { id } = useParams();
   // 데이터 출력 state
-  const [title, setTitle] = useState<string | null>("");
+  const [title, setTitle] = useState<string>("");
   const [contents, setContents] = useState<BoardContent[]>([]);
   const [startDate, setStarDate] = useState<undefined | Date>(new Date());
   const [endDate, setEndDate] = useState<undefined | Date>(new Date());
+
+  // page 삭제 함수
+  const handleRealDelete = async () => {
+    const { error, status } = await deleteTodoId(Number(id));
+    if (!error) {
+      router.push("/");
+    }
+  };
+
+  // 타이틀 저장 함수
+  const handleSaveTitle = async () => {
+    console.log(title);
+    const { data, error, status } = await updateTodoIdTitle(Number(id), title);
+    console.log(data);
+    console.log(error);
+    console.log(status);
+  };
+
+  // 컨텐츠 삭제 함수
+  const deleteContent = async (deleteBoardId: string) => {
+    console.log("삭제할 컨텐츠 boardId : ", deleteBoardId);
+    const tempContentArr = contents.filter(
+      (item) => item.boardId !== deleteBoardId
+    );
+    // 서버에 Row 를 업데이트 합니다.
+    const { data, error, status } = await updateTodoId(
+      Number(id),
+      JSON.stringify(tempContentArr)
+    );
+
+    fetchGetTodoId();
+  };
 
   // 컨텐츠 데이터 업데이트 함수
   const updateContent = async (newData: BoardContent) => {
@@ -123,6 +163,22 @@ function Page() {
 
   return (
     <div className={styles.container}>
+      {/* board 메뉴 */}
+      <div className="absolute flex w-full items-center justify-center gap-4 p-3">
+        <div className="flex-1">
+          <Button variant={"outline"} onClick={() => router.push("/")}>
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+        </div>
+        <div className="flex gap-2">
+          <Button variant={"outline"} onClick={handleSaveTitle}>
+            저장
+          </Button>
+          <Button variant={"outline"} onClick={handleRealDelete}>
+            삭제
+          </Button>
+        </div>
+      </div>
       {/* 상단 */}
       <header className={styles.container_header}>
         <div className={styles.container_header_contents}>
@@ -130,6 +186,8 @@ function Page() {
             type="text"
             placeholder="Enter Title Here"
             className={styles.input}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
           />
           {/* 진행율 */}
           <div className={styles.progressBar}>
@@ -193,6 +251,7 @@ function Page() {
                 key={item.boardId}
                 item={item}
                 updateContent={updateContent}
+                deleteContent={deleteContent}
               />
             ))}
           </div>

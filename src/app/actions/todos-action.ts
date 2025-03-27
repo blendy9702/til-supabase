@@ -66,3 +66,41 @@ export async function updateTodoId(id: number, contents: string) {
     status: number;
   };
 }
+
+// title 업데이트 함수
+// Update 기능 id 한개
+export async function updateTodoIdTitle(id: number, title: string) {
+  const supabase = await createServerSideClient();
+
+  const { data, error, status } = await supabase
+    .from("todos")
+    .update({ title: title })
+    .eq("id", id)
+    .select()
+    .single();
+
+  return { data, error, status } as {
+    data: TodosRow | null;
+    error: Error | null;
+    status: number;
+  };
+}
+
+// title 업데이트 함수
+// Update 기능 id 한개
+export async function deleteTodoId(id: number) {
+  const supabase = await createServerSideClient();
+
+  const { data, error, status } = await supabase
+    .from("todos")
+    .delete()
+    .eq("id", id)
+    .select()
+    .single();
+
+  return { data, error, status } as {
+    data: TodosRow | null;
+    error: Error | null;
+    status: number;
+  };
+}
