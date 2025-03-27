@@ -41,6 +41,9 @@ function Page() {
   const [contents, setContents] = useState<BoardContent[]>([]);
   const [startDate, setStarDate] = useState<undefined | Date>(new Date());
   const [endDate, setEndDate] = useState<undefined | Date>(new Date());
+  const [totalCount, setTotalCount] = useState<number>(0);
+  // Progress Bar 처리
+  const [completedCount, setCompletedCount] = useState<number>(0);
 
   // page 삭제 함수
   const handleRealDelete = async () => {
@@ -48,6 +51,7 @@ function Page() {
     if (!error) {
       router.push("/");
     }
+    window.location.reload();
   };
 
   // 타이틀 저장 함수
@@ -65,6 +69,7 @@ function Page() {
     const tempContentArr = contents.filter(
       (item) => item.boardId !== deleteBoardId
     );
+
     // 서버에 Row 를 업데이트 합니다.
     const { data, error, status } = await updateTodoId(
       Number(id),
@@ -115,6 +120,15 @@ function Page() {
     setEndDate(data?.end_date ? new Date(data.end_date) : new Date());
     const temp = data?.contents ? JSON.parse(data.contents as string) : [];
     setContents(temp);
+    // 목록 갱신시
+    calcCompletedCount(temp);
+  };
+  // contents 의 isCompleted 가 true 인 갯수 파악하기
+  const calcCompletedCount = (gogo: BoardContent[]) => {
+    const arr = gogo.filter((item) => item.isCompleted === true);
+    // console.log("count : ", arr.length);
+    setCompletedCount(arr.length);
+    setTotalCount(arr.length / gogo.length);
   };
 
   // 컨텐츠 추가하기
@@ -161,6 +175,11 @@ function Page() {
     fetchGetTodoId();
   }, []);
 
+  useEffect(() => {
+    console.log("contents : ", contents);
+    calcCompletedCount(contents);
+  }, []);
+
   return (
     <div className={styles.container}>
       {/* board 메뉴 */}
@@ -191,10 +210,12 @@ function Page() {
           />
           {/* 진행율 */}
           <div className={styles.progressBar}>
-            <span className={styles.progressBar_status}>1/10 completed!</span>
+            <span className={styles.progressBar_status}>
+              {completedCount} / {contents.length} completed!
+            </span>
             {/* Progress 컴포넌트 배치 */}
             <Progress
-              value={33}
+              value={totalCount * 100}
               className="w-[30%] h-2"
               indicateColor="bg-orange-500"
             />
@@ -245,7 +266,7 @@ function Page() {
             </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-start w-full h-full gap-4">
+          <div className="flex flex-col items-center justify-start w-full h-full gap-4 overflow-y-scroll">
             {contents.map((item) => (
               <BasicBoard
                 key={item.boardId}
