@@ -22,6 +22,8 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { sidebarStateAtom } from "@/app/store";
+import { useAtom } from "jotai";
 
 // contents 배열에 대한 타입 정의
 interface BoardContent {
@@ -34,12 +36,14 @@ interface BoardContent {
 }
 
 function Page() {
+  // jotai State 갱신
+  const [sidebarState, setSidebarState] = useAtom(sidebarStateAtom);
   const router = useRouter();
   const { id } = useParams();
   // 데이터 출력 state
   const [title, setTitle] = useState<string>("");
   const [contents, setContents] = useState<BoardContent[]>([]);
-  const [startDate, setStarDate] = useState<undefined | Date>(new Date());
+  const [startDate, setStartDate] = useState<undefined | Date>(new Date());
   const [endDate, setEndDate] = useState<undefined | Date>(new Date());
   const [totalCount, setTotalCount] = useState<number>(0);
   // Progress Bar 처리
@@ -49,18 +53,23 @@ function Page() {
   const handleRealDelete = async () => {
     const { error, status } = await deleteTodoId(Number(id));
     if (!error) {
+      // jotai State 갱신
+      setSidebarState("titleChange");
       router.push("/");
     }
-    window.location.reload();
   };
 
   // 타이틀 저장 함수
   const handleSaveTitle = async () => {
     console.log(title);
-    const { data, error, status } = await updateTodoIdTitle(Number(id), title);
-    console.log(data);
-    console.log(error);
-    console.log(status);
+    const { data, error, status } = await updateTodoIdTitle(
+      Number(id),
+      title,
+      startDate,
+      endDate
+    );
+    // jotai State 갱신
+    setSidebarState("titleChange");
   };
 
   // 컨텐츠 삭제 함수
@@ -116,7 +125,7 @@ function Page() {
     });
 
     setTitle(data?.title ? data.title : "");
-    setStarDate(data?.start_date ? new Date(data.start_date) : new Date());
+    setStartDate(data?.start_date ? new Date(data.start_date) : new Date());
     setEndDate(data?.end_date ? new Date(data.end_date) : new Date());
     const temp = data?.contents ? JSON.parse(data.contents as string) : [];
     setContents(temp);
@@ -173,6 +182,8 @@ function Page() {
 
   useEffect(() => {
     fetchGetTodoId();
+    // jotai State 갱신
+    setSidebarState("titleChange");
   }, []);
 
   useEffect(() => {
@@ -227,11 +238,13 @@ function Page() {
                 label="From"
                 required={false}
                 selectedDate={startDate}
+                onDateChange={setStartDate}
               />
               <LabelCalendar
                 label="To"
-                required={true}
+                required={false}
                 selectedDate={endDate}
+                onDateChange={setEndDate}
               />
             </div>
             <Button
