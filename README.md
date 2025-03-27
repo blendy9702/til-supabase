@@ -163,3 +163,37 @@ const handleSaveTitle = async () => {
 ```
 
 ## Row 삭제하기
+
+- page.tsx
+
+```tsx
+// page 삭제 함수
+const handleRealDelete = async () => {
+  const { error, status } = await deleteTodoId(Number(id));
+  if (!error) {
+    router.push("/");
+  }
+};
+```
+
+- todos-action.ts
+
+```tsx
+// Update 기능 id 한개
+export async function deleteTodoId(id: number) {
+  const supabase = await createServerSideClient();
+
+  const { data, error, status } = await supabase
+    .from("todos")
+    .delete()
+    .eq("id", id)
+    .select()
+    .single();
+
+  return { data, error, status } as {
+    data: TodosRow | null;
+    error: Error | null;
+    status: number;
+  };
+}
+```
