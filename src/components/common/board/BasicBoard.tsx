@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronUp } from "lucide-react";
 import LabelCalendar from "@/components/common/calendar/LabelCalendar";
-import MarkdownDialog from "@/components/common/dialog/MarkdownDialog";
+import MarkdownDialog from "../dialog/MarkdownDialog";
 
 function BasicBoard() {
   return (

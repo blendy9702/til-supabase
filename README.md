@@ -1,96 +1,137 @@
-# Create
+# read
 
-## 실습 1.
+- /src/app/actions/todo-action.ts
 
-- shadcn/ui Toast 컴포넌트 배치
-- https://ui.shadcn.com/docs/components/toast 제거됨
-- https://ui.shadcn.com/docs/components/sonner 사용
-
-```bash
-npx shadcn@latest add sonner
-```
-
-## 실습 2. Toast 적용하기
-
-- /src/app/layout.tsx 에 적용
-
-```tsx
-import type { Metadata } from "next";
-import { Roboto } from "next/font/google";
-import "./globals.css";
-import SideNavigation from "@/components/common/navigation/SideNavigation";
-
-// shadcn/ui
-import { Toaster } from "@/components/ui/sonner";
-
-const roboto = Roboto({
-  variable: "--font-roboto",
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-});
-
-export const metadata: Metadata = {
-  title: "Todo",
-  description: "Todo Supabase",
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="ko">
-      <body className={`${roboto.variable}  antialiased`}>
-        <SideNavigation />
-        {children}
-        <Toaster />
-      </body>
-    </html>
-  );
+```ts
+// Read 기능
+export async function getTodos() {
+  const supabase = await createServerSideClient();
+  const { data, error, status } = await supabase.from("todos").select("*");
+  return { data, error, status };
 }
 ```
 
-## 실습 3. Toast 출력하기
-
-- /src/components/common/dialog/MarkdownDialog.tsx
+- /src/components/common/navigation/SideNavigation.tsx
 
 ```tsx
-// todo 작성
-const onSubmit = () => {
-  if (!title || !content) {
-    toast.error("부정적인! 입력하다 항목.", {
-      description: "입력하다 제목 또는 내용",
+"use client";
+import { useEffect, useState } from "react";
+
+// actions
+import { getTodos, TodosRow } from "@/app/actions/todos-action";
+
+// scss
+import styles from "@/components/common/navigation/SideNavigation.module.scss";
+
+// sahdcn/ui
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dot, Search } from "lucide-react";
+import { toast } from "sonner";
+
+function SideNavigation() {
+  const [todos, setTodos] = useState<TodosRow[] | null>([]);
+
+  const fetchGetTodos = async () => {
+    const { data, error, status } = await getTodos();
+    // 에러 발생시
+    if (error) {
+      toast.error("데이터조회실패", {
+        description: `데이터조회에 실패하였습니다. ${error.message}`,
+        duration: 3000,
+      });
+      return;
+    }
+    // 최종 데이터
+    toast.success("데이터 조회 성공", {
+      description: "데이터조회에 성공하였습니다",
       duration: 3000,
     });
-    return;
-  }
-  toast.success("긍정적인!", {
-    description: "등록되다 글이 supabase",
-    duration: 3000,
-  });
-};
+
+    setTodos(data);
+  };
+
+  useEffect(() => {
+    fetchGetTodos();
+  }, []);
+  return (
+    <div className={styles.container}>
+      {/* 검색창 */}
+      <div className={styles.container_searchBox}>
+        <Input
+          type="text"
+          placeholder="검색어를 입력하세요."
+          className="focus-visible:right"
+        />
+        <Button variant={"outline"} size={"icon"}>
+          <Search className="w-4 h-4" />
+        </Button>
+      </div>
+      {/* page 추가 버튼 */}
+      <div className={styles.container_buttonBox}>
+        <Button
+          variant={"outline"}
+          className="w-full text-orange-500 border-orange-400 hover:bg-orange-50 hover:text-orange-500"
+        >
+          Add New Page
+        </Button>
+      </div>
+      {/* 추가 항목 출력 영역 */}
+      <div className={styles.container_todos}>
+        <div className={styles.container_todos_label}>Your Todo</div>
+        <div className={styles.container_todos_list}>
+          {todos!.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center py-2 bg-[#f5f5f4] rounded-sm cursor-pointer"
+            >
+              <Dot className="mr-1 text-green-400" />
+              <span className="text-sm">{item.title}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default SideNavigation;
 ```
 
-## 실습 4. Supabase 연동하기 - actions 생성
+- /src/components/common/navigation/SideNavigation.module.scss
 
-- `/src/app/actions 폴더 생성`
-- `/src/app/actions/todos-action.ts 파일 생성`
+```scss
+&_list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+```
+
+# DB 칼럼 변경
+
+- content 를 contents 이름 변경(타입은 jsonb)
+- start_date 추가 (타입은 timestamptz : now() )
+- end_date 추가 (타입은 timestamptz )
+- `npm run generate-types` 꼭 실행
+
+# DB 변경으로 인한 데이터 추가 부분 수정
+
+- todo-action.ts
 
 ```ts
-"use server";
-import { createServerSideClient } from "@/lib/supabase/server";
-import { Database } from "@/types/types_db";
-export type TodosRow = Database["public"]["Tables"]["todos"]["Row"];
-export type TodosRowInsert = Database["public"]["Tables"]["todos"]["Insert"];
-export type TodosRowUpdate = Database["public"]["Tables"]["todos"]["Update"];
-
-// Create 기능
-export async function createTodo(todos: TodosRowInsert) {
+export async function createTodo(todo: TodosRowInsert) {
   const supabase = await createServerSideClient();
   const { data, error, status } = await supabase
     .from("todos")
-    .insert([{ title: todos.title, content: todos.content }])
+    .insert([
+      {
+        title: todo.title,
+        contents: todo.contents,
+        start_date: todo.start_date,
+        end_date: todo.end_date,
+      },
+    ])
     .select()
     .single();
 
@@ -98,160 +139,299 @@ export async function createTodo(todos: TodosRowInsert) {
 }
 ```
 
-## 실습 5. 서버 액션 실행하기
-
-- MarkdownDialog.tsx
+- SideNavigation.tsx (추가)
 
 ```tsx
-// todo 작성
-const onSubmit = async () => {
-  if (!title || !content) {
-    toast.error("부정적인! 입력하다 항목.", {
-      description: "입력하다 제목 또는 내용",
-      duration: 3000,
-    });
-    return;
-  }
-
-  // 서버 액션 실행하기
+// create
+const onCreate = async () => {
   const { data, error, status } = await createTodo({
-    content,
-    title,
+    title: "",
+    contents: JSON.stringify([]),
+    start_date: new Date().toISOString(),
+    end_date: new Date().toISOString(),
   });
+  // 에러 발생시
   if (error) {
-    toast.error("실패하다 등록 :(", {
-      description: `Error ${error.message}`,
+    toast.error("데이터 추가 실패", {
+      description: `데이터 추가에 실패하였습니다. ${error.message}`,
       duration: 3000,
     });
     return;
   }
-
-  toast.success("긍정적인!", {
-    description: "등록되다 글이 supabase",
+  // 최종 데이터
+  toast.success("데이터 추가 성공", {
+    description: "데이터 추가에 성공하였습니다",
     duration: 3000,
   });
+  // 데이터 추가 성공시 할일 등록창으로 이동시킴
+  // http://localhost:3000/create/ [data.id] 로 이동
 };
 ```
 
-## 6. UI 수정(창닫기)
+# 데이터 추가 후 할일 여러개 등록 페이지로 이동하기
+
+- http://localhost:3000/create/[id] 로 이동처리
+- app/create 파일들을 /app/create/[id] 폴더로 이동
+- SideNavigation.tsx 라우터 추가
 
 ```tsx
-"use client";
-// SCSS
-import styles from "@/components/common/dialog/MarkdownDialog.module.scss";
-import { Checkbox } from "@/components/ui/checkbox";
-// Markdown
-import MDEditor from "@uiw/react-md-editor";
-
-// shadcn/ui
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
-import LabelCalendar from "../calendar/LabelCalendar";
-import { useState } from "react";
-import { toast } from "sonner";
-import { createTodo } from "@/app/actions/todos-action";
-
-function MarkdownDialog() {
-  // 다이얼로그 Props
-  const [open, setOpen] = useState<boolean>(false);
-  // 에디터의 제목/본문 내용
-  const [title, setTitle] = useState<string | undefined>("");
-  const [content, setContent] = useState<string | undefined>("");
-
-  // todo 작성
-  const onSubmit = async () => {
-    if (!title || !content) {
-      toast.error("부정적인! 입력하다 항목.", {
-        description: "입력하다 제목 또는 내용",
-        duration: 3000,
-      });
-      return;
-    }
-
-    // 서버 액션 실행하기
-    const { data, error, status } = await createTodo({
-      content,
-      title,
-    });
-    if (error) {
-      toast.error("실패하다 등록 :(", {
-        description: `Error ${error.message}`,
-        duration: 3000,
-      });
-      return;
-    }
-
-    toast.success("긍정적인!", {
-      description: "등록되다 글이 supabase",
+// create
+const onCreate = async () => {
+  const { data, error, status } = await createTodo({
+    title: "",
+    contents: JSON.stringify([]),
+    start_date: new Date().toISOString(),
+    end_date: new Date().toISOString(),
+  });
+  // 에러 발생시
+  if (error) {
+    toast.error("데이터 추가 실패", {
+      description: `데이터 추가에 실패하였습니다. ${error.message}`,
       duration: 3000,
     });
-
-    // 창닫기
-    setOpen(false);
-    setTitle("");
-    setContent("");
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <span className="flex justify-center w-full font-normal text-gray-400 hover:text-gray-500 cursor-pointer">
-          Add Content
-        </span>
-      </DialogTrigger>
-      <DialogContent className="max-w-fit min-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>
-            <div className={styles.dialog_titleBox}>
-              <Checkbox className="w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Write a title for your board"
-                className={styles.dialog_titleBox_title}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-          </DialogTitle>
-          <div className={styles.dialog_calendarBox}>
-            <LabelCalendar label="From" required={false} />
-            <LabelCalendar label="To" required={false} />
-          </div>
-          <Separator />
-          {/* 마크다운 입력 영역 */}
-          <div className={styles.dialog_markdown}>
-            <MDEditor height={"80%"} value={content} onChange={setContent} />
-          </div>
-        </DialogHeader>
-        <DialogFooter>
-          <div className={styles.dialog_buttonBox}>
-            <Button
-              variant={"ghost"}
-              className="font-normal text-gray-400 hover:bg-gray-50 hover:text-gray-500"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="font-normal border-orange-500 bg-orange-400 text-white hover:bg-orange-500 hover:text-white"
-              onClick={onSubmit}
-            >
-              Save
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-export default MarkdownDialog;
+    return;
+  }
+  // 최종 데이터
+  toast.success("데이터 추가 성공", {
+    description: "데이터 추가에 성공하였습니다",
+    duration: 3000,
+  });
+  console.log("등록된 id ", data.id);
+  // 데이터 추가 성공시 할일 등록창으로 이동시킴
+  // http://localhost:3000/create/ [data.id] 로 이동
+  router.push(`/create/${data.id}`);
+};
 ```
+
+## 상세페이지에서 params 를 알아내서 처리
+
+- todo-action.ts : id 에 해당하는 Row 데이터를 읽어오기
+
+```ts
+// Read 기능 id 한개
+export async function getTodoId(id: number) {
+  const supabase = await createServerSideClient();
+  const { data, error, status } = await supabase
+    .from("todos")
+    .select()
+    .eq("id", id)
+    .single();
+  return { data, error, status } as {
+    data: TodosRow | null;
+    error: Error | null;
+    status: number;
+  };
+}
+```
+
+- /src/app/create/[id]/page.tsx
+
+```tsx
+const { id } = useParams();
+// id 에 해당하는 Row 데이터를 읽어오기
+const fetchGetTodoId = async () => {
+  const { data, error, status } = await getTodoId(Number(id));
+  // 에러 발생시
+  if (error) {
+    toast.error("데이터 호출 실패", {
+      description: `데이터 호출에 실패하였습니다. ${error.message}`,
+      duration: 3000,
+    });
+    return;
+  }
+  // 최종 데이터
+  toast.success("데이터 호출 성공", {
+    description: "데이터 호출에 성공하였습니다",
+    duration: 3000,
+  });
+
+  setTitle(data?.title ? data.title : "");
+  setStarDate(data?.start_date ? data.start_date : new Date());
+  setEndDate(data?.end_date ? data.end_date : new Date());
+  const temp = data?.contents ? JSON.parse(data.contents as string) : [];
+  setContents(temp);
+};
+
+useEffect(() => {
+  fetchGetTodoId();
+}, []);
+```
+
+- id 에 해당하는 contents[] 안의 요소에 대한 타입 정의
+
+```tsx
+// contents 배열에 대한 타입 정의
+interface BoardContent {
+  isCompleted: boolean;
+  title: string;
+  content: string;
+  startDate: string | Date;
+  endDate: string | Date;
+  boardId: string; // 랜던함 아이디를 생성해줄 예정
+}
+```
+
+- 화면에 각 보드에 출력시킬 state
+
+```tsx
+// 데이터 출력 state
+const [title, setTitle] = useState<string | null>("");
+const [contents, setContents] = useState<BoardContent[]>();
+const [startDate, setStarDate] = useState<string | Date>("");
+const [endDate, setEndDate] = useState<string | Date>("");
+```
+
+## Page 에서 Add New Board 를 선택시 할일을 여러개 추가
+
+```tsx
+// 컨텐츠 추가하기
+const onCreateContent = () => {
+  // 기본으로 추가될 내용
+  const addContent: BoardContent = {
+    boardId: "1111",
+    title: "",
+    content: "",
+    startDate: new Date().toISOString(),
+    endDate: new Date().toISOString(),
+    isCompleted: false,
+  };
+  const updateContent = [...contents, addContent];
+  // 서버에 Row 를 업데이트 합니다.
+};
+```
+
+- todo-action.ts : update 액션 추가
+
+```ts
+// Update 기능 id 한개
+export async function updateTodoId(id: number, contents: string) {
+  const supabase = await createServerSideClient();
+
+  const { data, error, status } = await supabase
+    .from("todos")
+    .update({ contents: contents })
+    .eq("id", id)
+    .select()
+    .single();
+
+  return { data, error, status } as {
+    data: TodosRow | null;
+    error: Error | null;
+    status: number;
+  };
+}
+```
+
+- 컨텐츠 추가하기 수정
+
+```tsx
+// 컨텐츠 추가하기
+const onCreateContent = async () => {
+  // 기본으로 추가될 내용
+  const addContent: BoardContent = {
+    boardId: "1111",
+    title: "",
+    content: "",
+    startDate: new Date().toISOString(),
+    endDate: new Date().toISOString(),
+    isCompleted: false,
+  };
+  const updateContent = [...contents, addContent];
+  // 서버에 Row 를 업데이트 합니다.
+  const { data, error, status } = await updateTodoId(
+    Number(id),
+    JSON.stringify(updateContent)
+  );
+
+  // 에러 발생시
+  if (error) {
+    toast.error("데이터 컨텐츠 업데이트 실패", {
+      description: `데이터 컨텐츠 업데이트에 실패하였습니다. ${error.message}`,
+      duration: 3000,
+    });
+    return;
+  }
+  // 최종 데이터
+  toast.success("데이터 컨텐츠 업데이트 성공", {
+    description: "데이터 컨텐츠 업데이트에 성공하였습니다",
+    duration: 3000,
+  });
+
+  // 자료 새로 후출
+  fetchGetTodoId();
+};
+```
+
+## 목록 출력하기
+
+```tsx
+{
+  /* 본문 */
+}
+<div className={styles.container_body}>
+  {/* conents 배열의 개수 만큼 출력이 되어야 함. */}
+  {contents.length == 0 ? (
+    <div>없어요</div>
+  ) : (
+    <div>
+      {contents.map((item) => (
+        <BasicBoard key={item.boardId} />
+      ))}
+    </div>
+  )}
+</div>;
+```
+
+## 랜덤한 boardId 생성하기 : 라이브러리
+
+- https://www.npmjs.com/package/nanoid
+
+```bash
+npm i nanoid --legacy-peer-deps
+```
+
+```tsx
+// 기본으로 추가될 내용
+const addContent: BoardContent = {
+  boardId: nanoid(),
+  title: "",
+  content: "",
+  startDate: new Date().toISOString(),
+  endDate: new Date().toISOString(),
+  isCompleted: false,
+};
+```
+
+## 목록이 없는 경우 추가
+
+```tsx
+<div className={styles.container_body}>
+  {/* conents 배열의 개수 만큼 출력이 되어야 함. */}
+  {contents.length == 0 ? (
+    <div className={styles.container_body_infoBox}>
+      <span className={styles.title}>There is no board yet. </span>
+      <span className={styles.subTitle}>
+        Click the button and start flashing!
+      </span>
+      <button className={styles.button} onClick={onCreateContent}>
+        <Image
+          src="/assets/images/round-button.svg"
+          alt="add board"
+          width={100}
+          height={100}
+        />
+      </button>
+    </div>
+  ) : (
+    <div className="flex flex-col items-center justify-start w-full h-full gap-4">
+      {contents.map((item) => (
+        <BasicBoard key={item.boardId} />
+      ))}
+    </div>
+  )}
+</div>
+```
+
+# 첫 페이지에서 Row 추가하기
+
+- /src/app/page.tsx
