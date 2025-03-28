@@ -1,21 +1,19 @@
 "use server";
 import { createServerSideClient } from "@/lib/supabase/server";
 import { Database } from "@/types/types_db";
-export type TodosRow = Database["public"]["Tables"]["todos"]["Row"];
-export type TodosRowInsert = Database["public"]["Tables"]["todos"]["Insert"];
-export type TodosRowUpdate = Database["public"]["Tables"]["todos"]["Update"];
+export type TodosRow = Database["public"]["Tables"]["blog"]["Row"];
+export type TodosRowInsert = Database["public"]["Tables"]["blog"]["Insert"];
+export type TodosRowUpdate = Database["public"]["Tables"]["blog"]["Update"];
 
 // Create 기능
-export async function createTodo(todo: TodosRowInsert) {
+export async function createBlog(blog: TodosRowInsert) {
   const supabase = await createServerSideClient();
   const { data, error, status } = await supabase
-    .from("todos")
+    .from("blog")
     .insert([
       {
-        title: todo.title,
-        contents: todo.contents,
-        start_date: todo.start_date,
-        end_date: todo.end_date,
+        title: blog.title,
+        content: blog.content,
       },
     ])
     .select()
@@ -24,11 +22,10 @@ export async function createTodo(todo: TodosRowInsert) {
   return { data, error, status };
 }
 // Read 기능
-export async function getTodos() {
-  console.log("getTodos =============");
+export async function getBlogs() {
   const supabase = await createServerSideClient();
   const { data, error, status } = await supabase
-    .from("todos")
+    .from("blog")
     .select("*")
     .order("id", { ascending: false });
   return { data, error, status } as {
@@ -39,10 +36,10 @@ export async function getTodos() {
 }
 
 // Read 기능 id 한개
-export async function getTodoId(id: number) {
+export async function getBlogId(id: number) {
   const supabase = await createServerSideClient();
   const { data, error, status } = await supabase
-    .from("todos")
+    .from("blog")
     .select()
     .eq("id", id)
     .single();
@@ -54,40 +51,16 @@ export async function getTodoId(id: number) {
 }
 
 // Update 기능 id 한개
-export async function updateTodoId(id: number, contents: string) {
-  const supabase = await createServerSideClient();
-
-  const { data, error, status } = await supabase
-    .from("todos")
-    .update({ contents: contents })
-    .eq("id", id)
-    .select()
-    .single();
-
-  return { data, error, status } as {
-    data: TodosRow | null;
-    error: Error | null;
-    status: number;
-  };
-}
-// Title 업데이트 함수
-
-// Update 기능 id 한개
-export async function updateTodoIdTitle(
+export async function updateBlogId(
   id: number,
   title: string,
-  startDate: Date | undefined,
-  endDate: Date | undefined
+  contents: string
 ) {
   const supabase = await createServerSideClient();
 
   const { data, error, status } = await supabase
-    .from("todos")
-    .update({
-      title: title,
-      start_date: startDate?.toISOString(),
-      end_date: endDate?.toISOString(),
-    })
+    .from("blog")
+    .update({ contents: contents, title: title })
     .eq("id", id)
     .select()
     .single();
@@ -98,10 +71,11 @@ export async function updateTodoIdTitle(
     status: number;
   };
 }
+
 // Row 삭제 기능
-export async function deleteTodo(id: number) {
+export async function deleteBlog(id: number) {
   const supabase = await createServerSideClient();
-  const { error, status } = await supabase.from("todos").delete().eq("id", id);
+  const { error, status } = await supabase.from("blog").delete().eq("id", id);
 
   return { error, status } as {
     error: Error | null;

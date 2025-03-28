@@ -13,12 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Dot, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { sidebarStateAtom } from "@/app/store";
 import { useAtom } from "jotai";
+import { sidebarStateAtom } from "@/app/store";
 
 function SideNavigation() {
-  // jotai 사용
-  const [sidebarState, setSidebarState] = useAtom(sidebarStateAtom);
+  // jotai 상태 사용하기
+  const [sidebarState, setSideState] = useAtom(sidebarStateAtom);
   // 라우터 이동
   const router = useRouter();
 
@@ -66,17 +66,20 @@ function SideNavigation() {
       description: "데이터조회에 성공하였습니다",
       duration: 3000,
     });
-
+    setSideState("default");
     setTodos(data);
   };
 
   useEffect(() => {
-    console.log("sidebarState : ", sidebarState);
     if (sidebarState !== "default") {
       fetchGetTodos();
-      setSidebarState("default");
+
+      if (sidebarState === "delete") {
+        router.push("/");
+      }
     }
   }, [sidebarState]);
+
   return (
     <div className={styles.container}>
       {/* 검색창 */}
@@ -94,10 +97,17 @@ function SideNavigation() {
       <div className={styles.container_buttonBox}>
         <Button
           variant={"outline"}
-          className="w-full text-orange-500 border-orange-400 hover:bg-orange-50 hover:text-orange-500"
+          className="text-orange-500 border-orange-400 hover:bg-orange-50 hover:text-orange-500"
           onClick={onCreate}
         >
           Add New Page
+        </Button>
+        <Button
+          variant={"outline"}
+          className="flex-1 text-orange-500 border-orange-400 hover:bg-orange-50 hover:text-orange-500"
+          onClick={() => router.push("/blog")}
+        >
+          Blog
         </Button>
       </div>
       {/* 추가 항목 출력 영역 */}

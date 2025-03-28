@@ -1,12 +1,12 @@
 "use client";
-
 import styles from "@/components/common/board/BasicBoard.module.scss";
-import LabelCalendar from "@/components/common/calendar/LabelCalendar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronUp } from "lucide-react";
-import { useEffect, useState } from "react";
+import LabelCalendar from "@/components/common/calendar/LabelCalendar";
 import MarkdownDialog from "../dialog/MarkdownDialog";
+import { Input } from "@/components/ui/input";
+import { useEffect, useState } from "react";
 
 // contents 배열에 대한 타입 정의
 interface BoardContent {
@@ -25,11 +25,12 @@ interface BasicBoardProps {
 }
 
 function BasicBoard({ item, updateContent, deleteContent }: BasicBoardProps) {
-  const [isCompleted, setIsCompleted] = useState<boolean>(item.isCompleted);
+  const [isComplted, setIsCompleted] = useState<boolean>(item.isCompleted);
 
   useEffect(() => {
     setIsCompleted(item.isCompleted);
   }, [item]);
+
   return (
     <div className={styles.container}>
       {/* 헤더 */}
@@ -37,11 +38,11 @@ function BasicBoard({ item, updateContent, deleteContent }: BasicBoardProps) {
         <div className={styles.container_header_titleBox}>
           <Checkbox
             className="w-5 h-5"
-            checked={isCompleted}
+            checked={isComplted}
             onCheckedChange={() => {
               item.isCompleted = !item.isCompleted;
-              setIsCompleted(item.isCompleted);
               updateContent(item);
+              setIsCompleted(item.isCompleted);
             }}
           />
           <span className={styles.title}>

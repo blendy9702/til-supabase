@@ -8,8 +8,8 @@ import styles from "@/components/common/dialog/MarkdownDialog.module.scss";
 import MDEditor from "@uiw/react-md-editor";
 
 // shadcn/ui
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,7 @@ import { toast } from "sonner";
 
 // 컴포넌트
 import LabelCalendar from "../calendar/LabelCalendar";
+import { createTodo } from "@/app/actions/todos-action";
 
 // contents 배열에 대한 타입 정의
 interface BoardContent {
@@ -40,12 +41,12 @@ interface BasicBoardProps {
 }
 
 function MarkdownDialog({ item, updateContent }: BasicBoardProps) {
-  // 다이얼로그 Props
-  const [open, setOpen] = useState<boolean>(false);
-
-  const [isCheckedCompleted, setIsCheckedCompleted] = useState<boolean>(
+  const [isCheckComplted, setIsCheckCompleted] = useState<boolean>(
     item.isCompleted
   );
+
+  // 다이얼로그 Props
+  const [open, setOpen] = useState<boolean>(false);
 
   // 에디터의 제목/본문 내용
   const [title, setTitle] = useState<string | undefined>(
@@ -57,6 +58,10 @@ function MarkdownDialog({ item, updateContent }: BasicBoardProps) {
 
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+
+  const [isCompleted, setIsComplted] = useState<boolean>(
+    item.isCompleted ? item.isCompleted : false
+  );
 
   // todo 작성
   const onSubmit = async () => {
@@ -76,10 +81,9 @@ function MarkdownDialog({ item, updateContent }: BasicBoardProps) {
       endDate: endDate,
       title: title,
       content: content,
-      isCompleted: isCheckedCompleted,
+      isCompleted: isCheckComplted,
     };
     updateContent(tempContent);
-
     // 창닫기
     setOpen(false);
     // setTitle("");
@@ -87,7 +91,7 @@ function MarkdownDialog({ item, updateContent }: BasicBoardProps) {
   };
 
   useEffect(() => {
-    setIsCheckedCompleted(item.isCompleted);
+    setIsCheckCompleted(item.isCompleted);
   }, [item]);
 
   return (
@@ -104,9 +108,9 @@ function MarkdownDialog({ item, updateContent }: BasicBoardProps) {
             <div className={styles.dialog_titleBox}>
               <Checkbox
                 className="w-5 h-5"
-                checked={isCheckedCompleted}
+                checked={isCheckComplted}
                 onCheckedChange={() => {
-                  setIsCheckedCompleted(!isCheckedCompleted);
+                  setIsCheckCompleted(!isCheckComplted);
                 }}
               />
               <input

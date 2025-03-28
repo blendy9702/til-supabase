@@ -1,15 +1,15 @@
 "use client";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 // nanoid
 import { nanoid } from "nanoid";
 // scss
 import styles from "@/app/create/[id]/page.module.scss";
 // action
 import {
+  deleteTodo,
   getTodoId,
   updateTodoId,
   updateTodoIdTitle,
-  deleteTodoId,
 } from "@/app/actions/todos-action";
 // component
 import BasicBoard from "@/components/common/board/BasicBoard";
@@ -20,10 +20,9 @@ import { Progress } from "@/components/ui/progress";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Image from "next/image";
-import { ChevronLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { sidebarStateAtom } from "@/app/store";
+import { ChevronLeftIcon } from "lucide-react";
 import { useAtom } from "jotai";
+import { sidebarStateAtom } from "@/app/store";
 
 // contents 배열에 대한 타입 정의
 interface BoardContent {
@@ -36,53 +35,51 @@ interface BoardContent {
 }
 
 function Page() {
-  // jotai State 갱신
-  const [sidebarState, setSidebarState] = useAtom(sidebarStateAtom);
+  // jotai 상태 사용하기
+  const [sidebarState, setSideState] = useAtom(sidebarStateAtom);
+
   const router = useRouter();
   const { id } = useParams();
   // 데이터 출력 state
   const [title, setTitle] = useState<string>("");
   const [contents, setContents] = useState<BoardContent[]>([]);
-  const [startDate, setStartDate] = useState<undefined | Date>(new Date());
+  const [startDate, setStarDate] = useState<undefined | Date>(new Date());
   const [endDate, setEndDate] = useState<undefined | Date>(new Date());
-  const [totalCount, setTotalCount] = useState<number>(0);
   // Progress Bar 처리
-  const [completedCount, setCompletedCount] = useState<number>(0);
+  const [completeCount, setCompleteCount] = useState<number>(0);
+  const [totalCount, setTotalCount] = useState<number>(0);
 
-  // page 삭제 함수
-  const handleRealDelete = async () => {
-    const { error, status } = await deleteTodoId(Number(id));
+  // Page 삭제 함수
+  const handleDeleteBoard = async () => {
+    // console.log(id, "제거하라");
+    const { error, status } = await deleteTodo(Number(id));
     if (!error) {
-      // jotai State 갱신
-      setSidebarState("titleChange");
-      router.push("/");
+      setSideState("delete");
     }
   };
 
   // 타이틀 저장 함수
   const handleSaveTitle = async () => {
-    console.log(title);
     const { data, error, status } = await updateTodoIdTitle(
       Number(id),
       title,
       startDate,
       endDate
     );
-    // jotai State 갱신
-    setSidebarState("titleChange");
-  };
 
+    // jotai의 State 갱신
+    setSideState("titleChange");
+  };
   // 컨텐츠 삭제 함수
   const deleteContent = async (deleteBoardId: string) => {
-    console.log("삭제할 컨텐츠 boardId : ", deleteBoardId);
-    const tempContentArr = contents.filter(
+    // console.log("삭제할 컨텐츠 boardId ", deleteBoardId);
+    const tempConentArr = contents.filter(
       (item) => item.boardId !== deleteBoardId
     );
-
     // 서버에 Row 를 업데이트 합니다.
     const { data, error, status } = await updateTodoId(
       Number(id),
-      JSON.stringify(tempContentArr)
+      JSON.stringify(tempConentArr)
     );
 
     fetchGetTodoId();
@@ -90,7 +87,7 @@ function Page() {
 
   // 컨텐츠 데이터 업데이트 함수
   const updateContent = async (newData: BoardContent) => {
-    console.log("최종전달 ", newData);
+    // console.log("최종전달 ", newData);
 
     const newContentArr = contents.map((item) => {
       if (item.boardId === newData.boardId) {
@@ -125,7 +122,7 @@ function Page() {
     });
 
     setTitle(data?.title ? data.title : "");
-    setStartDate(data?.start_date ? new Date(data.start_date) : new Date());
+    setStarDate(data?.start_date ? new Date(data.start_date) : new Date());
     setEndDate(data?.end_date ? new Date(data.end_date) : new Date());
     const temp = data?.contents ? JSON.parse(data.contents as string) : [];
     setContents(temp);
@@ -136,8 +133,8 @@ function Page() {
   const calcCompletedCount = (gogo: BoardContent[]) => {
     const arr = gogo.filter((item) => item.isCompleted === true);
     // console.log("count : ", arr.length);
-    setCompletedCount(arr.length);
-    setTotalCount(arr.length / gogo.length);
+    setCompleteCount(arr.length);
+    setTotalCount((arr.length / gogo.length) * 100);
   };
 
   // 컨텐츠 추가하기
@@ -155,7 +152,7 @@ function Page() {
     // 기본으로 추가될 내용
 
     const updateContent = [...contents, addContent];
-    console.log("updateContent : ", updateContent);
+    // console.log("updateContent : ", updateContent);
     // 서버에 Row 를 업데이트 합니다.
     const { data, error, status } = await updateTodoId(
       Number(id),
@@ -181,30 +178,25 @@ function Page() {
   };
 
   useEffect(() => {
+    // jotai의 State 갱신
+    setSideState("add Page");
     fetchGetTodoId();
-    // jotai State 갱신
-    setSidebarState("titleChange");
-  }, []);
-
-  useEffect(() => {
-    console.log("contents : ", contents);
-    calcCompletedCount(contents);
   }, []);
 
   return (
     <div className={styles.container}>
       {/* board 메뉴 */}
-      <div className="absolute flex w-full items-center justify-center gap-4 p-3">
+      <div className="absolute flex w-full items-center justify-center p-3">
         <div className="flex-1">
           <Button variant={"outline"} onClick={() => router.push("/")}>
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeftIcon className="w-4 h-4" />
           </Button>
         </div>
         <div className="flex gap-2">
           <Button variant={"outline"} onClick={handleSaveTitle}>
             저장
           </Button>
-          <Button variant={"outline"} onClick={handleRealDelete}>
+          <Button variant={"outline"} onClick={handleDeleteBoard}>
             삭제
           </Button>
         </div>
@@ -222,11 +214,11 @@ function Page() {
           {/* 진행율 */}
           <div className={styles.progressBar}>
             <span className={styles.progressBar_status}>
-              {completedCount} / {contents.length} completed!
+              {completeCount}/{contents.length} completed!
             </span>
             {/* Progress 컴포넌트 배치 */}
             <Progress
-              value={totalCount * 100}
+              value={totalCount}
               className="w-[30%] h-2"
               indicateColor="bg-orange-500"
             />
@@ -238,7 +230,7 @@ function Page() {
                 label="From"
                 required={false}
                 selectedDate={startDate}
-                onDateChange={setStartDate}
+                onDateChange={setStarDate}
               />
               <LabelCalendar
                 label="To"
