@@ -17,11 +17,11 @@ const Page = () => {
 
   useEffect(() => {
     fetchGetBlogId(id as string);
-  }, [id]);
+  }, []);
 
   return (
     <div className="w-[920px] h-screen bg-[#f9f9f9] border-r border-[#d6d6d6] flex items-start justify-center">
-      {blog && <EditEditor blog={blog} />}
+      {blog ? <EditEditor blog={blog} /> : "자료가 없습니다."}
     </div>
   );
 };

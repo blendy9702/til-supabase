@@ -25,7 +25,6 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={`${roboto.variable}  antialiased`}>
-        <SideNavigation />
         {children}
         <Toaster />
       </body>

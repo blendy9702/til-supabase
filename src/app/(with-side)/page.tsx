@@ -1,5 +1,5 @@
 "use client";
-import styles from "@/app/page.module.scss";
+import styles from "@/app/(with-side)/page.module.scss";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";

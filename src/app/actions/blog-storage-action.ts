@@ -30,7 +30,6 @@ export async function uploadFile(formData: FormData): Promise<{
     // }
 
     const file = formData.get("file") as File;
-
     // 파일 이름에 사용자 ID를 포함시켜 고유성 보장
     const fileExt = file.name.split(".").pop();
 
@@ -56,12 +55,16 @@ export async function uploadFile(formData: FormData): Promise<{
   }
 }
 
-// 파일 삭제
+// supabas에서 파일 삭제
 export async function deleteFile(fileName: string) {
   const supabase = await createServerSideClient();
+
+  // 파일 삭제시 파일명을 배열에 요소로 추가해서 삭제한다.
   const { data, error } = await supabase.storage
     .from(process.env.NEXT_PUBLIC_STORAGE_BLOG_BUCKET as string)
     .remove([fileName]);
+
   handleError(error);
+
   return data;
 }

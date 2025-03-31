@@ -2,7 +2,7 @@ import styles from "@/components/editor/editor.module.css";
 
 import { BlogsRow, updateBlogId } from "@/app/actions/blog-action";
 import { useEffect, useRef, useState } from "react";
-import Toolbar from "@/components/editor/toolbar";
+import Toolbar from "./toolbar";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
@@ -147,28 +147,7 @@ const EditEditor = ({ blog }: { blog: BlogsRow }) => {
       const imageUrl = getImageUrl(result?.path ?? "");
 
       // 새로 업로드된 이미지 URL 추적
-      // 사용자가 새로운 이미지를 추가할 때 실행되는 함수
-      const handleImageUpload = async (file: File) => {
-        console.log("이미지 업로드 시 :", file);
-        try {
-          const formData = new FormData();
-          formData.append("file", file);
-
-          // uploadFile에 FormData 전달
-          const result = await uploadFile(formData);
-
-          // 이미지 URL 생성
-          const imageUrl = getImageUrl(result?.path ?? "");
-
-          // 새로 업로드된 이미지 URL 추적
-          setNewUploadImages((prev) => [...prev, imageUrl]);
-
-          return imageUrl;
-        } catch (error) {
-          console.error("Image upload error:", error);
-          return null;
-        }
-      };
+      setNewUploadImages((prev) => [...prev, imageUrl]);
 
       return imageUrl;
     } catch (error) {

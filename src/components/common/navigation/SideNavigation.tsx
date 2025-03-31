@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAtom } from "jotai";
 import { sidebarStateAtom } from "@/app/store";
+import { signOut } from "@/app/auth/callback/route";
 
 function SideNavigation() {
   // jotai 상태 사용하기
@@ -80,6 +81,11 @@ function SideNavigation() {
     }
   }, [sidebarState]);
 
+  const fetchSignOut = async () => {
+    await signOut();
+    router.push("/");
+  };
+
   return (
     <div className={styles.container}>
       {/* 검색창 */}
@@ -116,6 +122,17 @@ function SideNavigation() {
           {/* 로그아웃 버튼 배치 */}
           {"홍길동"}님 Your Todo
         </div>
+
+        <div>
+          <button
+            className="border rounded px-2.5 py-2"
+            type="submit"
+            onClick={fetchSignOut}
+          >
+            Sign Out
+          </button>
+        </div>
+
         <div className={styles.container_todos_list}>
           {todos!.map((item) => (
             <div
