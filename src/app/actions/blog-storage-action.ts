@@ -33,6 +33,8 @@ export async function uploadFile(formData: FormData): Promise<{
 
     // 파일 이름에 사용자 ID를 포함시켜 고유성 보장
     const fileExt = file.name.split(".").pop();
+
+    // 인증 과정을 거치고 나면 사용자 ID 를 이용해서 파일을 생성한다.
     // const fileName = `${user.id}_${Date.now()}.${fileExt}`;
     const fileName = `${"tester"}_${Date.now()}.${fileExt}`;
 
@@ -52,4 +54,14 @@ export async function uploadFile(formData: FormData): Promise<{
     handleError(error);
     return null;
   }
+}
+
+// 파일 삭제
+export async function deleteFile(fileName: string) {
+  const supabase = await createServerSideClient();
+  const { data, error } = await supabase.storage
+    .from(process.env.NEXT_PUBLIC_STORAGE_BLOG_BUCKET as string)
+    .remove([fileName]);
+  handleError(error);
+  return data;
 }
