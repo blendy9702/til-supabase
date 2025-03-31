@@ -1,7 +1,7 @@
 "use client";
 import { uploadFile } from "@/app/actions/blog-storage-action";
 // 이미지 주소를 생성해주는 것 (업로드 후 문자열로)
-import { getImageUrl } from "@/app/utils/storege-utils";
+import { getImageUrl } from "@/utils/storage-utils";
 import { Editor } from "@tiptap/react";
 
 interface AddPhotoProps {
@@ -17,6 +17,7 @@ export default function AddPhoto({ editor, onImageUpload }: AddPhotoProps) {
 
     if (onImageUpload) {
       const imageUrl = await onImageUpload(file);
+      console.log(imageUrl);
       if (imageUrl) {
         editor.commands.setImage({ src: imageUrl });
       }
@@ -24,6 +25,7 @@ export default function AddPhoto({ editor, onImageUpload }: AddPhotoProps) {
       const formData = new FormData();
       formData.append("file", file);
       const result = await uploadFile(formData);
+      console.log("result : ", result);
       const IMG_URL = getImageUrl(result?.path ?? "");
       editor.commands.setImage({ src: IMG_URL });
     }

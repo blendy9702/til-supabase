@@ -18,7 +18,6 @@ export async function uploadFile(formData: FormData): Promise<{
 } | null> {
   try {
     const supabase = await createServerSideClient();
-
     // getUser()를 사용하여 인증된 사용자 정보 가져오기
     // const {
     //   data: { user },
@@ -43,6 +42,7 @@ export async function uploadFile(formData: FormData): Promise<{
       .upload(fileName, file, { upsert: true });
 
     if (error) {
+      console.log("Error : ", error.message);
       handleError(error);
       return null; // 에러 발생 시 null 반환
     }
