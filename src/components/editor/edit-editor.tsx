@@ -1,217 +1,8 @@
-# blog 목록 출력
-
-- blog 접속시 목록 출력
-- 목록 선택시 blog/[id] 로 이동
-- 상세내용에서 삭제/수정 버튼 출력
-
-## 폴더구조
-
-- list : /src/app/blog/page.tsx
-  - http://localhost:3000/blog
-- read : /src/app/blog/[id]/page.tsx
-  - http://localhost:3000/blog/1
-- create : /src/app/blog/create/page.tsx
-  - http://localhost:3000/blog/create
-- edit : /src/app/blog/edit/[id]/page.tsx
-  - http://localhost:3000/blog/edit/1
-
-## List 목록 page
-
-```tsx
-"use client";
-import Link from "next/link";
-import React, { useEffect, useState } from "react";
-import { BlogsRow, deleteBlog, getBlogs } from "@/app/actions/blog-action";
-import { Button } from "@/components/ui/button";
-import { Trash } from "lucide-react";
-import { useRouter } from "next/navigation";
-
-function Page() {
-  const router = useRouter();
-  const [blogs, setBlogs] = useState<BlogsRow[] | null>([]);
-  const fetchGetBlogs = async () => {
-    const { data, error, status } = await getBlogs();
-    if (data) {
-      setBlogs(data);
-    }
-  };
-  // 내용 삭제 : 이미지도 같이 삭제
-  const deleteContent = async (_id: number) => {
-    console.log("이미지 삭제처리 필요");
-    const { error, status } = await deleteBlog(_id);
-    if (!error) {
-      fetchGetBlogs();
-    }
-  };
-
-  useEffect(() => {
-    fetchGetBlogs();
-  }, []);
-
-  return (
-    <div className="w-[920px] h-screen bg-[#f9f9f9] border-r border-[#d6d6d6] flex items-start justify-center">
-      <div className="w-full p-5">
-        <h1 className="w-full text-center items-center p-2 bg-slate-100 rounded-md shadow-md">
-          Blog List
-        </h1>
-        <div className="flex flex-col w-full items-center justify-center p-2">
-          {blogs &&
-            blogs.map((item) => (
-              <div
-                className="flex w-full items-center gap-4 p-2 rounded-lg border border-gray-200 shadow-sm bg-white my-1"
-                key={item.id}
-              >
-                <p className="flex-1 text-sm font-medium">
-                  <Link href={`/blog/${item.id}`} className="cursor-pointer">
-                    {item.title}
-                  </Link>
-                </p>
-                <div>
-                  <Button
-                    variant={"ghost"}
-                    size={"icon"}
-                    className="cursor-pointer"
-                    onClick={() => deleteContent(item.id)}
-                  >
-                    <Trash className="w-5 h-5" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-        </div>
-        <div>
-          <Button
-            variant={"outline"}
-            onClick={() => router.push("/blog/create")}
-          >
-            생성
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default Page;
-```
-
-## Read page
-
-```tsx
-"use client";
-
-import { deleteBlog, getBlogId } from "@/app/actions/blog-action";
-import { Button } from "@/components/ui/button";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-
-const Page = () => {
-  const router = useRouter();
-  // 무조건 id string 입니다.
-  const { id } = useParams();
-  const [title, setTitle] = useState<string | null>("");
-  const [date, setDate] = useState<string>("");
-  const [content, setContent] = useState<string | null>("");
-
-  const fetchGetBlogId = async (_id: string) => {
-    const { data, error, status } = await getBlogId(Number(_id));
-
-    // 타입 가드 적용
-    if (data) {
-      setTitle(data.title);
-      setDate(data.created_at);
-      setContent(data.content);
-    }
-  };
-  // 내용 삭제 : 이미지도 같이 삭제
-  const deleteContent = async () => {
-    console.log("이미지 삭제처리 필요");
-    const { error, status } = await deleteBlog(Number(id));
-    if (!error) {
-      router.push("/blog");
-    }
-  };
-  useEffect(() => {
-    fetchGetBlogId(id as string);
-  }, []);
-  return (
-    <div className="w-[920px] h-screen bg-[#f9f9f9] border-r border-[#d6d6d6] flex items-start justify-center">
-      <div className="w-full flex flex-col p-4">
-        <h1 className="w-full text-center text-xl mb-4 font-bold">Blog Read</h1>
-        <div className="space-y-4">
-          <div className="text-lg font-semibold mb-2">{title}</div>
-          <div className="text-gray-600 text-sm mb-4">{date.split("T")[0]}</div>
-          <div
-            className="editor ProseMirror"
-            dangerouslySetInnerHTML={{ __html: content || "" }}
-          ></div>
-        </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <Button
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors cursor-pointer"
-            onClick={() => router.push(`/blog/edit/${id}`)}
-          >
-            수정
-          </Button>
-          <Button
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors cursor-pointer"
-            onClick={() => deleteContent()}
-          >
-            삭제
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Page;
-```
-
-## Edit page
-
-- /src/app/blog/edit/[id]/page.tsx
-
-```tsx
-"use client";
-import { BlogsRow, getBlogId } from "@/app/actions/blog-action";
-import EditEditor from "@/components/editor/edit-editor";
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-
-const Page = () => {
-  const { id } = useParams();
-  const [blog, setBlog] = useState<BlogsRow | null>(null);
-
-  const fetchGetBlogId = async (_id: string) => {
-    const { data, error, status } = await getBlogId(Number(_id));
-    if (data) {
-      setBlog(data);
-    }
-  };
-
-  useEffect(() => {
-    fetchGetBlogId(id as string);
-  }, []);
-
-  return (
-    <div className="w-[920px] h-screen bg-[#f9f9f9] border-r border-[#d6d6d6] flex items-start justify-center">
-      <EditEditor blog={blog} />
-    </div>
-  );
-};
-
-export default Page;
-```
-
-- /src/components/editor/edit-editor.tsx
-
-```tsx
 import styles from "@/components/editor/editor.module.css";
 
 import { BlogsRow, updateBlogId } from "@/app/actions/blog-action";
 import { useEffect, useRef, useState } from "react";
-import Toolbar from "./toolbar";
+import Toolbar from "@/components/editor/toolbar";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
@@ -356,7 +147,28 @@ const EditEditor = ({ blog }: { blog: BlogsRow }) => {
       const imageUrl = getImageUrl(result?.path ?? "");
 
       // 새로 업로드된 이미지 URL 추적
-      setNewUploadImages((prev) => [...prev, imageUrl]);
+      // 사용자가 새로운 이미지를 추가할 때 실행되는 함수
+      const handleImageUpload = async (file: File) => {
+        console.log("이미지 업로드 시 :", file);
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          // uploadFile에 FormData 전달
+          const result = await uploadFile(formData);
+
+          // 이미지 URL 생성
+          const imageUrl = getImageUrl(result?.path ?? "");
+
+          // 새로 업로드된 이미지 URL 추적
+          setNewUploadImages((prev) => [...prev, imageUrl]);
+
+          return imageUrl;
+        } catch (error) {
+          console.error("Image upload error:", error);
+          return null;
+        }
+      };
 
       return imageUrl;
     } catch (error) {
@@ -493,4 +305,3 @@ const EditEditor = ({ blog }: { blog: BlogsRow }) => {
 };
 
 export default EditEditor;
-```
