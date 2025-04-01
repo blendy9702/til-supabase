@@ -1,56 +1,230 @@
-# 카카오 인증
+# zustand
 
-- 참조 : https://www.youtube.com/watch?v=iWQEK8pS2kU
+- https://zustand.docs.pmnd.rs/getting-started/introduction
+- 상식 : https://velog.io/@rinm/Jotai-Zustand
 
-## 카카오 개발자 설정
-
-- https://developers.kakao.com
-- Rest API, Secret Code, Redirect URI 설정 진행
-
-## 카카오 로그인 코드 진행
-
-- /src/lib/supabase/actions.ts 추가
-
-```ts
-"use server";
-
-import { Provider } from "@supabase/supabase-js";
-import { createServerSideClient } from "./server";
-import { redirect } from "next/navigation";
-
-const signInWith = (provider: Provider) => async () => {
-  const supabase = await createServerSideClient();
-
-  const auth_callback_url = `${process.env.SITE_URL}/auth/callback`;
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider,
-    options: {
-      redirectTo: auth_callback_url,
-    },
-  });
-
-  console.log(data);
-
-  if (error) {
-    console.log(error);
-  }
-
-  redirect(data.url as string);
-};
-
-// 구글
-const signInWithGoogle = signInWith("google");
-// 카카오
-const signInWithKakao = signInWith("kakao");
-
-const signOut = async () => {
-  const supabase = await createServerSideClient();
-  await supabase.auth.signOut();
-};
-
-// 외부 활용
-export { signInWithGoogle, signInWithKakao, signOut };
+```bash
+npm install zustand --legacy-peer-deps
 ```
 
-## 로그인 버튼 배치
+## 기본 설정
+
+- `로그인 사용자 정보를 전역 보관`한다.
+- 일반적으로 `/app/store 폴더`에 store 를 생성합니다.
+- `/app/store/useUserStore.ts 파일` 생성
+
+```ts
+import { create } from "zustand";
+interface UserState {
+  name: string;
+  email: string;
+  uid: string;
+  setUser: (name: string, email: string, uid: string) => void;
+}
+export const useUserStore = create<UserState>((set) => ({
+  name: "",
+  email: "",
+  uid: "",
+  setUser: (name, email, uid) => set({ name, email, uid }),
+}));
+```
+
+## 정보전달
+
+- /app/(with-side)/layout.tsx
+
+```tsx
+import SideNavigation from "@/components/common/navigation/SideNavigation";
+import { ReactNode } from "react";
+
+// Supabase Server Client
+import { createServerSideClient } from "@/lib/supabase/server";
+
+export default async function Layout({ children }: { children: ReactNode }) {
+  const supabase = await createServerSideClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return (
+    <>
+      <SideNavigation user={user} />
+      <div>{children}</div>
+    </>
+  );
+}
+```
+
+## 정보 활용
+
+- /src/components/navigation/SideNavigation.tsx
+
+```tsx
+"use client";
+import { useEffect, useState } from "react";
+
+// actions
+import { createTodo, getTodos, TodosRow } from "@/app/actions/todos-action";
+
+// scss
+import styles from "@/components/common/navigation/SideNavigation.module.scss";
+
+// sahdcn/ui
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dot, Search } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useAtom } from "jotai";
+import { sidebarStateAtom } from "@/app/store";
+import { signOut } from "@/lib/supabase/actions";
+
+// zustand
+import { useUserStore } from "@/app/store/useUserStore";
+import { User } from "@supabase/supabase-js";
+
+function SideNavigation({ user }: { user: User | null }) {
+  const { name, email, setUser } = useUserStore();
+  // zustand 업데이트
+  useEffect(() => {
+    if (user) {
+      setUser(user.user_metadata.full_name, user.email!, user.id);
+    }
+  }, []);
+
+  // jotai 상태 사용하기
+  const [sidebarState, setSideState] = useAtom(sidebarStateAtom);
+  // 라우터 이동
+  const router = useRouter();
+
+  const [todos, setTodos] = useState<TodosRow[] | null>([]);
+  // create
+  const onCreate = async () => {
+    const { data, error, status } = await createTodo({
+      title: "",
+      contents: JSON.stringify([]),
+      start_date: new Date().toISOString(),
+      end_date: new Date().toISOString(),
+    });
+    // 에러 발생시
+    if (error) {
+      toast.error("데이터 추가 실패", {
+        description: `데이터 추가에 실패하였습니다. ${error.message}`,
+        duration: 3000,
+      });
+      return;
+    }
+    // 최종 데이터
+    toast.success("데이터 추가 성공", {
+      description: "데이터 추가에 성공하였습니다",
+      duration: 3000,
+    });
+    console.log("등록된 id ", data.id);
+    // 데이터 추가 성공시 할일 등록창으로 이동시킴
+    // http://localhost:3000/create/ [data.id] 로 이동
+
+    router.push(`/create/${data.id}`);
+  };
+  // read
+  const fetchGetTodos = async () => {
+    const { data, error, status } = await getTodos();
+    // 에러 발생시
+    if (error) {
+      toast.error("데이터조회실패", {
+        description: `데이터조회에 실패하였습니다. ${error.message}`,
+        duration: 3000,
+      });
+      return;
+    }
+    // 최종 데이터
+    toast.success("데이터 조회 성공", {
+      description: "데이터조회에 성공하였습니다",
+      duration: 3000,
+    });
+    setSideState("default");
+    setTodos(data);
+  };
+
+  useEffect(() => {
+    if (sidebarState !== "default") {
+      fetchGetTodos();
+
+      if (sidebarState === "delete") {
+        router.push("/");
+      }
+    }
+  }, [sidebarState]);
+
+  const fetchSignOut = async () => {
+    await signOut();
+    router.push("/");
+  };
+
+  return (
+    <div className={styles.container}>
+      {/* 검색창 */}
+      <div className={styles.container_searchBox}>
+        <Input
+          type="text"
+          placeholder="검색어를 입력하세요."
+          className="focus-visible:right"
+        />
+        <Button variant={"outline"} size={"icon"}>
+          <Search className="w-4 h-4" />
+        </Button>
+      </div>
+      {/* page 추가 버튼 */}
+      <div className={styles.container_buttonBox}>
+        <Button
+          variant={"outline"}
+          className="text-orange-500 border-orange-400 hover:bg-orange-50 hover:text-orange-500"
+          onClick={onCreate}
+        >
+          Add New Page
+        </Button>
+        <Button
+          variant={"outline"}
+          className="flex-1 text-orange-500 border-orange-400 hover:bg-orange-50 hover:text-orange-500"
+          onClick={() => router.push("/blog")}
+        >
+          Blog
+        </Button>
+      </div>
+      {/* 추가 항목 출력 영역 */}
+      <div className={styles.container_todos}>
+        <div className={styles.container_todos_label}>
+          {/* 로그아웃 버튼 배치 */}
+          {name}님 Your Todo {email}
+        </div>
+
+        <div>
+          <button
+            className="border rounded px-2.5 py-2"
+            type="submit"
+            onClick={fetchSignOut}
+          >
+            Sign Out
+          </button>
+        </div>
+
+        <div className={styles.container_todos_list}>
+          {todos!.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center py-2 bg-[#f5f5f4] rounded-sm cursor-pointer"
+              onClick={() => router.push(`/create/${item.id}`)}
+            >
+              <Dot className="mr-1 text-green-400" />
+              <span className="text-sm">
+                {item.title ? item.title : "No Title"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default SideNavigation;
+```
